@@ -1,5 +1,7 @@
 package go_phrase_scanner
 
+import "strings"
+
 type TrieNode struct {
 	char     rune
 	children map[rune]*TrieNode
@@ -15,8 +17,9 @@ func NewTrie(phrases []string) TrieNode {
 		depth:    0,
 	}
 	for i, phrase := range phrases {
-		n.needles[i] = []rune(phrase)
+		n.needles[i] = []rune(strings.ToLower(phrase))
 	}
+	n.Build()
 	return n
 }
 
@@ -33,7 +36,7 @@ func (node *TrieNode) Build() {
 			cn = &TrieNode{char: char, depth: node.depth + 1, children: make(map[rune]*TrieNode)}
 			node.children[char] = cn
 		}
-		cn.needles = append(node.needles, n[1:])
+		cn.needles = append(cn.needles, n[1:])
 	}
 	node.needles = nil // Free the memory
 	for _, cn := range node.children {
@@ -41,16 +44,20 @@ func (node *TrieNode) Build() {
 	}
 }
 
-func (node *TrieNode) ScanString(s string, ch chan string) {
+func (node *TrieNode) ScanString(s string) <-chan string {
+	ch := make(chan string)
 	if node.depth != 0 {
 		panic("this method may only be called on the root node")
 	}
-	runes := []rune(s)
+	runes := []rune(strings.ToLower(s))
 	num_runes := len(runes)
-	for i := 0; i < num_runes; i++ {
-		node.lookup(runes, i, i, ch)
-	}
-	close(ch)
+	go func() {
+		defer close(ch)
+		for i := 0; i < num_runes; i++ {
+			node.lookup(runes, i, i, ch)
+		}
+	}()
+	return ch
 }
 
 func (node *TrieNode) lookup(runes []rune, i_start int, i_end int, ch chan string) {
