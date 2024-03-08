@@ -3,6 +3,7 @@ package go_phrase_scanner
 import (
 	"io"
 	"strings"
+	"unicode"
 )
 
 type TrieNode struct {
@@ -56,7 +57,7 @@ func (node *TrieNode) ScanString(s string) <-chan string {
 	if node.depth != 0 {
 		panic("this method may only be called on the root node")
 	}
-	runes := []rune(strings.ToLower(s))
+	runes := []rune(s)
 	num_runes := len(runes)
 	go func() {
 		defer close(ch)
@@ -76,7 +77,22 @@ func (node *TrieNode) ScanReader(r io.Reader) <-chan string {
 		defer close(ch)
 		// I wish there were a more efficient way to do this...
 		buf, _ := io.ReadAll(r)
-		runes := []rune(strings.ToLower(string(buf)))
+		runes := []rune(string(buf))
+		num_runes := len(runes)
+		for i := 0; i < num_runes; i++ {
+			node.lookup(runes, i, i, ch)
+		}
+	}()
+	return ch
+}
+
+func (node *TrieNode) ScanRunes(runes []rune) <-chan string {
+	ch := make(chan string)
+	if node.depth != 0 {
+		panic("this method may only be called on the root node")
+	}
+	go func() {
+		defer close(ch)
 		num_runes := len(runes)
 		for i := 0; i < num_runes; i++ {
 			node.lookup(runes, i, i, ch)
@@ -92,7 +108,7 @@ func (node *TrieNode) lookup(runes []rune, i_start int, i_end int, ch chan strin
 	if i_end == len(runes) {
 		return
 	}
-	char := runes[i_end]
+	char := unicode.ToLower(runes[i_end])
 	child := node.children[char]
 	if child == nil {
 		return

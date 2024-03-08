@@ -36,7 +36,7 @@ func TestVariedCase(t *testing.T) {
 	DoStringSearch(t,
 		[]string{"hello", "goodbye"},
 		"hellO GOOdbYe",
-		[]string{"hello", "goodbye"})
+		[]string{"hellO", "GOOdbYe"})
 }
 
 func TestEmptyResults(t *testing.T) {
@@ -57,7 +57,7 @@ func TestPhrases(t *testing.T) {
 	DoStringSearch(t,
 		[]string{"a long time ago", "once upon a time", "time out", "time bomb"},
 		"Once upon a time outside of a city, a long time ago, there was a time bomb that had a timeout.",
-		[]string{"once upon a time", "time out", "a long time ago", "time bomb"})
+		[]string{"Once upon a time", "time out", "a long time ago", "time bomb"})
 }
 
 func FuzzScanReaderAgainstScanString(f *testing.F) {
