@@ -1,6 +1,9 @@
 package go_phrase_scanner
 
-import "strings"
+import (
+	"io"
+	"strings"
+)
 
 type TrieNode struct {
 	char     rune
@@ -10,17 +13,21 @@ type TrieNode struct {
 	depth    uint
 }
 
-func NewTrie(phrases []string) TrieNode {
+func NewTrie(phrases []string) (TrieNode, int) {
 	n := TrieNode{
 		children: make(map[rune]*TrieNode),
 		needles:  make([][]rune, len(phrases)),
 		depth:    0,
 	}
+	maxlen := 0
 	for i, phrase := range phrases {
 		n.needles[i] = []rune(strings.ToLower(phrase))
+		if len(phrase) > maxlen {
+			maxlen = len(phrase)
+		}
 	}
 	n.Build()
-	return n
+	return n, maxlen
 }
 
 func (node *TrieNode) Build() {
@@ -53,6 +60,24 @@ func (node *TrieNode) ScanString(s string) <-chan string {
 	num_runes := len(runes)
 	go func() {
 		defer close(ch)
+		for i := 0; i < num_runes; i++ {
+			node.lookup(runes, i, i, ch)
+		}
+	}()
+	return ch
+}
+
+func (node *TrieNode) ScanReader(r io.Reader) <-chan string {
+	ch := make(chan string)
+	if node.depth != 0 {
+		panic("this method may only be called on the root node")
+	}
+	go func() {
+		defer close(ch)
+		// I wish there were a more efficient way to do this...
+		buf, _ := io.ReadAll(r)
+		runes := []rune(strings.ToLower(string(buf)))
+		num_runes := len(runes)
 		for i := 0; i < num_runes; i++ {
 			node.lookup(runes, i, i, ch)
 		}
