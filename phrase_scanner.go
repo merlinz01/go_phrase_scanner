@@ -27,11 +27,13 @@ func NewTrie(phrases []string) (TrieNode, int) {
 			maxlen = len(phrase)
 		}
 	}
-	n.Build()
+	allocBuf := newAllocationBuffer[TrieNode](max(len(phrases), 100))
+	allocBuf.InitFunc = func() TrieNode { return TrieNode{} }
+	n.Build(&allocBuf)
 	return n, maxlen
 }
 
-func (node *TrieNode) Build() {
+func (node *TrieNode) Build(allocBuf *allocationBuffer[TrieNode]) {
 	node.children = make(map[rune]*TrieNode)
 	for _, n := range node.needles {
 		if len(n) == 0 {
@@ -41,14 +43,17 @@ func (node *TrieNode) Build() {
 		char := n[0]
 		cn := node.children[char]
 		if cn == nil {
-			cn = &TrieNode{char: char, depth: node.depth + 1, children: make(map[rune]*TrieNode)}
+			cn = allocBuf.allocate()
+			cn.char = char
+			cn.depth = node.depth + 1
+			cn.children = make(map[rune]*TrieNode)
 			node.children[char] = cn
 		}
 		cn.needles = append(cn.needles, n[1:])
 	}
 	node.needles = nil // Free the memory
 	for _, cn := range node.children {
-		cn.Build()
+		cn.Build(allocBuf)
 	}
 }
 
