@@ -1,3 +1,3 @@
 module github.com/merlinz01/go_phrase_scanner
 
-go 1.22
+go 1.19

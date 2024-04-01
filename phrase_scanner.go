@@ -27,7 +27,11 @@ func NewTrie(phrases []string) (TrieNode, int) {
 			maxlen = len(phrase)
 		}
 	}
-	allocBuf := newAllocationBuffer[TrieNode](max(len(phrases), 100))
+	bufsize := len(phrases)
+	if bufsize < 100 {
+		bufsize = 100
+	}
+	allocBuf := newAllocationBuffer[TrieNode](bufsize)
 	allocBuf.InitFunc = func() TrieNode { return TrieNode{} }
 	n.Build(&allocBuf)
 	return n, maxlen
